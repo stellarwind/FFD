@@ -2,17 +2,34 @@
 <html lang="us">
 <head>
 	<meta charset="utf-8">
-	<title>FFD WebGl</title>
+
+	<title>FFD WebGL</title>
+
 	<link href="css/flick/jquery-ui-1.9.1.custom.css" rel="stylesheet">
+	<link href="css/additional.css" rel="stylesheet">
+
 	<script src="js/jquery-1.8.2.js"></script>
 	<script src="js/jquery-ui-1.9.1.custom.js"></script>
 	<script src="js/three.min.js"></script>
+	<script src="js/controls.js"></script>
 	<script src="js/main.js"></script>
-	<script>
-	$(function() {
-
-
-});
-
+	
+<body>
+	<div id="controls">
+		<div id="accordion">
+		<h3>Model settings</h3>
+		<div>
+			<div><button class="button">Load teapot</button></div>
+			<div><button class="button">Load sphere</button></div>
+			<div><button class="button">Load helix</button></div>
+			<div><button class="button">Load custom mesh</button></div>
+		</div>
+		<h3>FFD lattice settings</h3>
+		<div>Test 2</div>
+		<h3>Renderer settings</h3>
+		<div>Test 3</div>
+</div>
+	</div>
+	<div id="context"></div>
 </body>
 </html>

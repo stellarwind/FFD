@@ -1,0 +1,19 @@
+body {	
+	font: 62.5% "Trebuchet MS", sans-serif;
+}
+
+#controls {
+	padding: 5px;
+	float: left;
+	width: 300px;
+	height: 640px;
+	background-image:url('nasty_fabric.png');
+	overflow:hidden;
+}
+
+#context {
+	float: left;
+	width:800px;
+	height: 650px;
+	background-image:url('wild_oliva.png');
+}

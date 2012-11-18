@@ -4,6 +4,9 @@
 
 
 $(function() {
-
-
+	var renderer = new THREE.WebGLRenderer({antialias: true});
+	renderer.setSize($('#context').width(), $('#context').height());
+	$('#context').append(renderer.domElement);
+	
+    renderer.clear();
 });
