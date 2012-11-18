@@ -1,7 +1,9 @@
 body {	
 	font: 62.5% "Trebuchet MS", sans-serif;
 }
-
+.button {
+	width: 150px;
+}
 #controls {
 	padding: 5px;
 	float: left;

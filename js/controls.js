@@ -1,4 +1,5 @@
 //FFD using three.js
+//UI part
 //Author: Jans Margevics 2012
 //TODO 
 
@@ -11,8 +12,20 @@ $(function() {
 
 	$("#accordion").accordion({
 		heightStyle: "content",
-		icons: icons
+		icons: icons,
+		collapsible: true
 	});
 
 	$(".button").button();
+
+	$( "#cpSlider" ).slider({
+            value:3,
+            min: 2,
+            max: 9,
+            step: 1,
+            slide: function( event, ui ) {
+                $("#amount").val( ui.value );
+            }
+        });
+    $("#amount").val($("#cpSlider").slider("value"));
 });
