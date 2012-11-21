@@ -12,17 +12,18 @@
 	<script src="js/jquery-ui-1.9.1.custom.js"></script>
 	<script src="js/three.min.js"></script>
 	<script src="js/orbit.js"></script>
-	<script src="js/controls.js"></script>
+	<script src="js/OBJLoader.js"></script>
 	<script src="js/main.js"></script>
+	<script src="js/controls.js"></script>
 	
 <body>
 	<div id="controls">
 		<div id="accordion">
 		<h3>Model settings</h3>
 		<div>
-			<div><button class="button">Load teapot</button></div>
-			<div><button class="button">Load sphere</button></div>
-			<div><button class="button">Load helix</button></div>
+			<div><button id="teapotBtn" class="button">Load teapot</button></div>
+			<div><button id="sphereBtn" class="button">Load sphere</button></div>
+			<div><button id="torusBtn" class="button">Load torus</button></div>
 			<div><button class="button">Load custom mesh</button></div>
 		</div>
 		<h3>FFD lattice settings</h3>
