@@ -10,9 +10,9 @@ $(function() {
 	var cpNum = 3;
 	var controlPoints = [];
 
-	for (i = 0; i < cpNum; ++i) {
+	for (i = 0; i <= cpNum; ++i) {
 		controlPoints[i] = new Array ();
-		for (var j = 0; j < cpNum; j++) {
+		for (var j = 0; j <= cpNum; j++) {
 			controlPoints[i][j] = new Array();
 		}
 	}
@@ -25,9 +25,9 @@ $(function() {
 	var latticeMesh = new THREE.Mesh( new THREE.CubeGeometry( 1, 1, 1 ), new THREE.MeshBasicMaterial( { color: 0xffff00, wireframe: true, fog: false } ) );
 	//latticeMesh.matrixAutoUpdate = false;
 
-	for(var i = 0; i < cpNum; i++){
-	    for(var j = 0; j < cpNum; j++){
-	      	for (var k = 0; k < cpNum; k++){
+	for(var i = 0; i <= cpNum; i++){
+	    for(var j = 0; j <= cpNum; j++){
+	      	for (var k = 0; k <= cpNum; k++){
 				controlPoints[i][j][k] = new THREE.Vector3(0,0,0);
 	      	}
 	    }
@@ -157,7 +157,7 @@ $(function() {
 		vertices[ 7 ].x = currentMesh.geometry.boundingBox.min.x;
 		vertices[ 7 ].y = currentMesh.geometry.boundingBox.min.y;
 		vertices[ 7 ].z = currentMesh.geometry.boundingBox.max.z;
-		
+
 		latticeMesh.geometry.verticesNeedUpdate = true;
 		scene.add(latticeMesh);
 	}
@@ -173,9 +173,9 @@ $(function() {
 		var cubeG = new THREE.CubeGeometry(1,1,1); 
 		var material2 = new THREE.MeshBasicMaterial({color: 0x00ff00}); 
 
-		for(var i = 0; i < cpNum; i++){
-	    	for(var j = 0; j < cpNum; j++){
-	      		for (var k = 0; k < cpNum; k++){
+		for(var i = 0; i <= cpNum; i++){
+	    	for(var j = 0; j <= cpNum; j++){
+	      		for (var k = 0; k <= cpNum; k++){
 					controlPoints[i][j][k].setX( origin.x + ((i/cpNum) * axis.x) );
 					controlPoints[i][j][k].setY( origin.y + ((j/cpNum) * axis.y) );
 					controlPoints[i][j][k].setZ( origin.z + ((k/cpNum) * axis.z) );
