@@ -4,11 +4,13 @@
 
 
 $(function() {
-	var camera, controls, scene;
+	var plane;
+	var camera, controls, scene, projector;
 	var currentMesh;
 	var clientWidth, clientHeight;
 	var cpNum = 3;
 	var controlPoints = [];
+	var draggable = [];
 
 	for (i = 0; i <= cpNum; ++i) {
 		controlPoints[i] = new Array ();
@@ -34,10 +36,20 @@ $(function() {
 	}
 
 	var renderer = new THREE.WebGLRenderer({antialias: true});
+	projector = new THREE.Projector();
+
+	renderer.domElement.addEventListener( 'mousemove', onDocumentMouseMove, false );
+	renderer.domElement.addEventListener( 'mousedown', onDocumentMouseDown, false );
+	renderer.domElement.addEventListener( 'mouseup', onDocumentMouseUp, false );
+	
 	var loader = new THREE.OBJLoader();
 
 	clientWidth = $('#context').width();
 	clientHeight = $('#context').height();
+
+	var mouse = new THREE.Vector2(),
+	offset = new THREE.Vector3(),
+	INTERSECTED, SELECTED;
 
 	init();
 	animate();
@@ -55,8 +67,13 @@ $(function() {
 
 		controls = new THREE.OrbitControls( camera, $('#context')[0] );
 		controls.addEventListener( 'change', render );
+		controls.enabled = false;
 
 		scene = new THREE.Scene();
+
+		plane = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000, 8, 8 ), new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.25, transparent: true, wireframe: true } ) );
+		plane.visible = false;
+		scene.add( plane );
 
 		var geometry = new THREE.CylinderGeometry( 0, 40, 130, 10, 10 );
 		var material =  new THREE.MeshLambertMaterial( { color:0xffffff, shading: THREE.FlatShading } );
@@ -185,7 +202,9 @@ $(function() {
 					cube.position.y = controlPoints[i][j][k].y;
 					cube.position.z = controlPoints[i][j][k].z;
 					cube.updateMatrix();
+					
 					cube.matrixAutoUpdate = false;
+					draggable.push(cube);
 					scene.add(cube);
 					//console.log(controlPoints[i][j][k].x,controlPoints[i][j][k].y,controlPoints[i][j][k].z);
 	      		}
@@ -206,5 +225,76 @@ $(function() {
 
 	}
 
+	function onDocumentMouseMove( event ) {
+		event.preventDefault();
+		mouse.x = ( (event.clientX - $('#context')[0].offsetLeft) / $('#context')[0].offsetWidth  ) * 2 - 1;
+		mouse.y = -( (event.clientY - $('#context')[0].offsetTop) / $('#context')[0].offsetHeight  ) * 2 + 1;
+		
+		var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+		projector.unprojectVector( vector, camera );
+		var ray = new THREE.Ray( camera.position, vector.subSelf( camera.position ).normalize() );
 
+
+		if ( SELECTED ) {
+			var intersects = ray.intersectObject( plane );
+			//SELECTED.position.copy( intersects[ 0 ].point.subSelf( offset ) );
+			return;
+		}
+		var intersects = ray.intersectObjects( draggable );
+		if ( intersects.length > 0 ) {
+
+			if ( INTERSECTED != intersects[ 0 ].object ) {
+
+				if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+				INTERSECTED = intersects[ 0 ].object;
+				INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+				plane.position.copy( INTERSECTED.position );
+				plane.lookAt( camera.position );
+
+			}
+			$('#context').css('cursor','pointer');
+
+		} else {
+
+			if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+			INTERSECTED = null;
+			$('#context').css('cursor','auto');
+		}
+	}
+
+	function onDocumentMouseDown( event ) {
+
+		event.preventDefault();
+
+		mouse.x = ( (event.clientX - $('#context')[0].offsetLeft) / $('#context')[0].offsetWidth  ) * 2 - 1;
+		mouse.y = -( (event.clientX - $('#context')[0].offsetTop) / $('#context')[0].offsetHeight  ) * 2 + 1;
+		
+		var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+		console.log(vector);
+		projector.unprojectVector( vector, camera );
+		var ray = new THREE.Ray( camera.position, vector.subSelf( camera.position ).normalize() );
+
+
+		var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+		projector.unprojectVector( vector, camera );
+		var ray = new THREE.Ray( camera.position, vector.subSelf( camera.position ).normalize() );
+		var intersects = ray.intersectObjects( draggable );
+		if ( intersects.length > 0 ) {
+			controls.userRotate = false;
+			SELECTED = intersects[ 0 ].object;
+			var intersects = ray.intersectObject( plane );
+			offset.copy( intersects[ 0 ].point ).subSelf( plane.position );
+			$('#context').css('cursor','move');
+		}
+	}
+
+	function onDocumentMouseUp( event ) {
+		event.preventDefault();
+		controls.userRotate = true;
+		if ( INTERSECTED ) {
+			plane.position.copy( INTERSECTED.position );
+			SELECTED = null;
+		}
+		$('#context').css('cursor','auto');
+	}
 });
