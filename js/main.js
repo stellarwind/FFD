@@ -10,28 +10,30 @@ $(function() {
 	var controlPoints = [];
 	var selectedCp;
 	var draggable = [];
-	var verts0;
-
+	var verts0 = [];
+	var loaded = false;
+	var meshName = "avahead.obj";
+	var object;
+	var loader;
 	for (i = 0; i <= cpNum; ++i) {
 		controlPoints[i] = new Array ();
 		for (var j = 0; j <= cpNum; j++) {
 			controlPoints[i][j] = new Array();
 		}
 	}
+
 	var origin = new THREE.Vector3(0,0,0);
 	var axis = new THREE.Vector3(0,0,0);
 	var sAxis = new THREE.Vector3(0,0,0);
 	var tAxis = new THREE.Vector3(0,0,0);
 	var uAxis = new THREE.Vector3(0,0,0);
-
 	var lattice;
 
-	for(var i = 0; i <= cpNum; i++){
-	    for(var j = 0; j <= cpNum; j++){
-	      	for (var k = 0; k <= cpNum; k++){
-				controlPoints[i][j][k] = new THREE.Vector3(0,0,0);
-	      	}
-	    }
+	initControls();
+
+	//We fill array with empty vectors
+	for(var i = 0; i <= cpNum * cpNum * cpNum; i++){
+		controlPoints[i] = new THREE.Vector3(0,0,0);
 	}
 
 	var renderer = new THREE.WebGLRenderer({antialias: true});
@@ -53,8 +55,48 @@ $(function() {
 	init();
 	animate();
 
-	function setMesh() {
+	function initControls() {
+		var icons = {
+		header: "ui-icon-circle-arrow-e",
+		activeHeader: "ui-icon-circle-arrow-s"
+    	};
 
+		$("#accordion").accordion({
+			heightStyle: "content",
+			icons: icons,
+			collapsible: true
+		});
+
+		$(".button").button();
+		$("#avatarBtn").click( function (event){
+			meshName = "avahead.obj"
+			resetMesh();
+		});
+		$("#monkeyBtn").click( function (event){
+			meshName = "monkey.obj"
+			resetMesh();
+		});
+		$("#teapotBtn").click( function (event){
+			meshName = "teapot.obj"
+			resetMesh();
+		});
+
+		$("#reset").click( function (event){
+			resetMesh();
+		});
+
+		$( "#cpSlider" ).slider({
+	            value:3,
+	            min: 2,
+	            max: 4,
+	            step: 1,
+	            slide: function( event, ui ) {
+	                $("#amount").val( ui.value );
+	                cpNum = Number(ui.value - 1);
+	                resetMesh();
+	            }
+	        });
+	    $("#amount").val($("#cpSlider").slider("value"));
 	}
 
 	function init() {
@@ -65,7 +107,6 @@ $(function() {
 		camera.position.z = 150;
 
 		controls = new THREE.TrackballControls( camera, $('#context')[0] );
-		
 		scene = new THREE.Scene();
 
 		plane = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000, 8, 8 ), new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.25, transparent: true, wireframe: true } ) );
@@ -75,49 +116,66 @@ $(function() {
 		var geometry = new THREE.CylinderGeometry( 0, 40, 130, 10, 10 );
 		var material =  new THREE.MeshLambertMaterial( { color:0xffffff, shading: THREE.FlatShading } );
 		geometry.computeBoundingBox();
-		// loader.addEventListener( 'load', function ( event ) {
+		loader = new THREE.OBJLoader();
+		loader.addEventListener( 'load', function ( event ) {
+			object = event.content;
+			for ( var i = 0, l = object.children.length; i < l; i ++ )
+				object.children[ i ].material = material;
+			object.position.y = 0;
+			object.position.z = 0;
+			currentMesh = object.children[0];
+			currentMesh.geometry.computeBoundingBox();
+			scene.add( object );
+			initCPoints();
+			generateLattice();
 
-		// 	var object = event.content;
-		// 	for ( var i = 0, l = object.children.length; i < l; i ++ )
-		// 		object.children[ i ].material = material;
+			//Storing initial array of vertices
+			for ( var i = 0; i < object.children[0].geometry.vertices.length; i ++ )
+				verts0.push(object.children[0].geometry.vertices[i]);
 
-		// 	object.position.y = 0;
-		// 	object.position.z = 0;
-		// 	currentMesh = object.children[0];
-		// 	currentMesh.computeBoundingBox();
-		// 	console.log(currentMesh);
-		// 	scene.add( currentMesh );
-		// 	initCPoints();
-		// });
-		//loader.load( 'obj/teapot3.obj' );
-		currentMesh = new THREE.Mesh( geometry, material );
-		currentMesh.position.y = 0;
-		currentMesh.position.z = 0;
-		scene.add( currentMesh  );
-		initCPoints();
-		
-		generateLattice();
-		verts0 = currentMesh.geometry.vertices;
-		//renderLattice();
+			loaded = true;
+		});
+		loader.load( 'obj/' + meshName );
 
-		//renderLatticeWireframe();
+		light1 = new THREE.DirectionalLight( 0xffffff );
+		light1.position.set( 1, 1, 1 );
+		scene.add( light1 );
 
-		light = new THREE.DirectionalLight( 0xffffff );
-		light.position.set( 1, 1, 1 );
-		scene.add( light );
+		light2 = new THREE.DirectionalLight( 0x002288 );
+		light2.position.set( -1, -1, -1 );
+		scene.add( light2 );
 
-		light = new THREE.DirectionalLight( 0x002288 );
-		light.position.set( -1, -1, -1 );
-		scene.add( light );
-
-		light = new THREE.AmbientLight( 0x222222 );
-		scene.add( light );
+		light3 = new THREE.AmbientLight( 0x222222 );
+		scene.add( light3 );
 	}
 
     function animate() {
 		requestAnimationFrame( animate );
 		render();
+	}
 
+	function resetMesh() {
+		for (var i = scene.children.length - 1; i >= 0 ; i -- ) {
+		   var obj = scene.children[ i ];
+		    if ( obj !== light1 && obj !== light2 && obj !== light3 && obj !== plane) {
+		        scene.remove(obj);
+		    }
+		}
+
+		for(var i = 0; i <= cpNum * cpNum * cpNum; i++){
+			controlPoints[i] = new THREE.Vector3(0,0,0);
+		}
+
+		origin = new THREE.Vector3(0,0,0);
+		axis = new THREE.Vector3(0,0,0);
+		sAxis = new THREE.Vector3(0,0,0);
+		tAxis = new THREE.Vector3(0,0,0);
+		uAxis = new THREE.Vector3(0,0,0);
+
+		verts0 = [];
+		draggable = [];
+		selectedCp = null;
+		loader.load( 'obj/' + meshName );
 	}
 
 	function render() {
@@ -132,42 +190,40 @@ $(function() {
 		return fact;
 	}
 
+	//bernstein polynomial of v-th degree.
 	function bernstein(u,v,stuPt) {
 		var binomial, bern;
-
 		binomial = factorial(v) / ( factorial(v - u) * factorial(u) );
 		bern = binomial * Math.pow(stuPt, u) * Math.pow((1 - stuPt), (v-u));
 		return bern;
 	}
 
 	function generateLattice(){
-		var L = cpNum;
-		var M = cpNum;
-		var N = cpNum;
-
+		//Getting vertices data
 		var geometry = new THREE.Geometry();
 		for ( var cp = 0; cp < draggable.length; cp++ ){
 			geometry.vertices.push( draggable[cp].position );
 		}
-		for ( var i = 0; i <= L; i++ ){				
-			for ( var j = 0; j <= M; j++ ){
-				for ( var k = 0; k <= N; k++ ){
-					if ( (j < M) && (k < N) )
-						geometry.faces.push( new THREE.Face4( k + (j*(N+1)) + (i*(M+1)*(N+1)), k + ((j+1)*(N+1)) + (i*(M+1)*(N+1)), (k+1) + ((j+1)*(N+1)) + (i*(M+1)*(N+1)),  (k+1) + (j*(N+1)) + (i*(M+1)*(N+1)) ) );
-					if ( (i < L) && (k < N) )
-						geometry.faces.push( new THREE.Face4( k + (j*(N+1)) + (i*(M+1)*(N+1)), k + (j*(N+1)) + ((i+1)*(M+1)*(N+1)), (k+1) + (j*(N+1)) + ((i+1)*(M+1)*(N+1)), (k+1) + (j*(N+1)) + (i*(M+1)*(N+1)) ) );	
-					if ( (i < L) && (j < M) )
-						geometry.faces.push( new THREE.Face4(k + (j*(N+1)) + (i*(M+1)*(N+1)), k + ((j+1)*(N+1)) + (i*(M+1)*(N+1)), k + ((j+1)*(N+1)) + ((i+1)*(M+1)*(N+1)), k + (j*(N+1)) + ((i+1)*(M+1)*(N+1)) ) );
+		//Generating indices data
+		for ( var i = 0; i <= cpNum; i++ ){				
+			for ( var j = 0; j <= cpNum; j++ ){
+				for ( var k = 0; k <= cpNum; k++ ){
+					if ( (j < cpNum) && (k < cpNum) )
+						geometry.faces.push( new THREE.Face4( k + (j*(cpNum+1)) + (i*(cpNum+1)*(cpNum+1)), k + ((j+1)*(cpNum+1)) + (i*(cpNum+1)*(cpNum+1)), (k+1) + ((j+1)*(cpNum+1)) + (i*(cpNum+1)*(cpNum+1)),  (k+1) + (j*(cpNum+1)) + (i*(cpNum+1)*(cpNum+1)) ) );
+					if ( (i < cpNum) && (k < cpNum) )
+						geometry.faces.push( new THREE.Face4( k + (j*(cpNum+1)) + (i*(cpNum+1)*(cpNum+1)), k + (j*(cpNum+1)) + ((i+1)*(cpNum+1)*(cpNum+1)), (k+1) + (j*(cpNum+1)) + ((i+1)*(cpNum+1)*(cpNum+1)), (k+1) + (j*(cpNum+1)) + (i*(cpNum+1)*(cpNum+1)) ) );	
+					if ( (i < cpNum) && (j < cpNum) )
+						geometry.faces.push( new THREE.Face4(k + (j*(cpNum+1)) + (i*(cpNum+1)*(cpNum+1)), k + ((j+1)*(cpNum+1)) + (i*(cpNum+1)*(cpNum+1)), k + ((j+1)*(cpNum+1)) + ((i+1)*(cpNum+1)*(cpNum+1)), k + (j*(cpNum+1)) + ((i+1)*(cpNum+1)*(cpNum+1)) ) );
 				}
 			}
 		}
-		geometry.computeBoundingSphere();
 		lattice = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true } ) );
 		lattice.geometry.verticesNeedUpdate = true;
 		scene.add( lattice );
 	}
 
 	function initCPoints() {
+		//getting the axis origin
 		origin = currentMesh.geometry.boundingBox.min;
 		axis.sub(currentMesh.geometry.boundingBox.max, currentMesh.geometry.boundingBox.min);
 
@@ -178,31 +234,34 @@ $(function() {
 		var cubeG = new THREE.CubeGeometry(1,1,1); 
 		var material2 = new THREE.MeshBasicMaterial({color: 0x00ff00}); 
 
+		//Positioning vertices along the stu axis. pos = (origin + (ijk) / control points number) * axis vector
+		var cp = 0;
 		for(var i = 0; i <= cpNum; ++i){
+		 	cp++;
 	    	for(var j = 0; j <= cpNum; ++j){
 	      		for (var k = 0; k <= cpNum; ++k){
-					controlPoints[i][j][k].setX( origin.x + ((i/cpNum) * axis.x) );
-					controlPoints[i][j][k].setY( origin.y + ((j/cpNum) * axis.y) );
-					controlPoints[i][j][k].setZ( origin.z + ((k/cpNum) * axis.z) );
+					controlPoints[cp].setX( origin.x + ((i/cpNum) * axis.x) );
+					controlPoints[cp].setY( origin.y + ((j/cpNum) * axis.y) );
+					controlPoints[cp].setZ( origin.z + ((k/cpNum) * axis.z) );
 					
 					var cube = new THREE.Mesh(cubeG, material2);
-					cube.position.x = controlPoints[i][j][k].x;
-					cube.position.y = controlPoints[i][j][k].y;
-					cube.position.z = controlPoints[i][j][k].z;
+					cube.position.x = controlPoints[cp].x;
+					cube.position.y = controlPoints[cp].y;
+					cube.position.z = controlPoints[cp].z;
 					cube.updateMatrix();
 					draggable.push(cube);
 					scene.add(cube);
-					//console.log(controlPoints[i][j][k].x,controlPoints[i][j][k].y,controlPoints[i][j][k].z);
 	      		}
 	    	}
-	  	}
+		}
 	}
 
+	// Applying bernstein polynomial to every vertex.
 	function deform(vec) {
-		STUp = convertToSTU(vec);
-		ffd1 = new THREE.Vector3(0,0,0);
-		ffd2 = new THREE.Vector3(0,0,0);
-		ffd3 = new THREE.Vector3(0,0,0);
+		var STUp = convertToSTU(vec);
+		var ffd1 = new THREE.Vector3(0,0,0);
+		var ffd2 = new THREE.Vector3(0,0,0);
+		var ffd3 = new THREE.Vector3(0,0,0);
 		var bpS = 0;
 		var bpT = 0;
 		var bpU = 0;
@@ -214,35 +273,31 @@ $(function() {
 		    for(var j = 0; j <= cpNum; j++) {
 		      ffd3.setX(0); ffd3.setY(0); ffd3.setZ(0);
 		      for(var k = 0; k <= cpNum; k++) {
-		      	bpU = bernstein(k, cpNum, STUp.x);
-		      	ffd3.x += (bpU * lattice.geometry.vertices[currentCp].x);
-		      	ffd3.y += (bpU * lattice.geometry.vertices[currentCp].y);
-		      	ffd3.z += (bpU * lattice.geometry.vertices[currentCp].z);
+		      	bpU = bernstein(k, cpNum, STUp.z);
+		      	ffd3.x = ffd3.x + (bpU * lattice.geometry.vertices[currentCp].x);
+		      	ffd3.y = ffd3.y + (bpU * lattice.geometry.vertices[currentCp].y);
+		      	ffd3.z = ffd3.z + (bpU * lattice.geometry.vertices[currentCp].z);
 		      	currentCp++;
 		      }
 		      bpT = bernstein(j, cpNum, STUp.y); 
-		      ffd2.x += (bpT * ffd3.x);
-		      ffd2.y += (bpT * ffd3.y);
-		      ffd2.z += (bpT * ffd3.z);
+		      ffd2.x = ffd2.x + (bpT * ffd3.x);
+		      ffd2.y = ffd2.y + (bpT * ffd3.y);
+		      ffd2.z = ffd2.z + (bpT * ffd3.z);
 		    }
-		    bpS = bernstein(i, cpNum, STUp.z);
-		    ffd1.x += (bpS * ffd2.x);
-		    ffd1.y += (bpS * ffd2.y);
-		    ffd1.z += (bpS * ffd2.z);    
+		    bpS = bernstein(i, cpNum, STUp.x);
+		    ffd1.x = ffd1.x + (bpS * ffd2.x);
+		    ffd1.y = ffd1.y + (bpS * ffd2.y);
+		    ffd1.z = ffd1.z + (bpS * ffd2.z);    
 		}
 		return ffd1;
 	}
 
+	//Deform inital vertices and sets them to the current mesh
 	function deformMesh(){
-		verts = currentMesh.geometry.vertices;
-		for (var i = 0; i < verts.length; i++){
+		for (var i = 0; i < currentMesh.geometry.vertices.length; i++){
 			currentMesh.geometry.vertices[i] = deform(verts0[i]);
 		}
-
-		currentMesh.geometry.computeBoundingSphere();
-		currentMesh.geometry.computeBoundingBox();
 		currentMesh.geometry.verticesNeedUpdate = true;
-		currentMesh.geometry.elementsNeedUpdate = true;
 	}
 
 	function convertToSTU(vec) {
@@ -279,40 +334,31 @@ $(function() {
 		if ( SELECTED ) {
 			var intersects = ray.intersectObject( plane );
 			SELECTED.position.copy( intersects[ 0 ].point.subSelf( offset ) );
+			lattice.geometry.vertices[selectedCp].copy( draggable[selectedCp].position );
+			lattice.geometry.verticesNeedUpdate = true;
+			deformMesh();
 			return;
 		}
 		
 		var intersects = ray.intersectObjects( draggable );
 
 		if ( intersects.length > 0 ) {
-			
-
 			if ( INTERSECTED != intersects[ 0 ].object ) {
-
 				for (var cc = 0; cc < draggable.length; cc++)
 				{
 					if (draggable[cc] == intersects[ 0 ].object) {
 						selectedCp = cc;
 					}
-
 				}
-
-				if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+				
 				INTERSECTED = intersects[ 0 ].object;
-
-				INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
 				plane.position.copy( INTERSECTED.position );
 				plane.lookAt( camera.position );
-				lattice.geometry.vertices[selectedCp].copy( draggable[selectedCp].position );
-				lattice.updateMatrix();
-				lattice.geometry.verticesNeedUpdate = true;
-
 			}
 			$('#context').css('cursor','pointer');
 
 		} else {
 
-			if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
 			INTERSECTED = null;
 			$('#context').css('cursor','auto');
 		}
@@ -331,6 +377,7 @@ $(function() {
 		
 		var intersects = ray.intersectObjects( draggable );
 		if ( intersects.length > 0 ) {
+
 			controls.enabled = false;
 			SELECTED = intersects[ 0 ].object;
 			var intersects = ray.intersectObject( plane );
@@ -342,11 +389,13 @@ $(function() {
 	function onDocumentMouseUp( event ) {
 		event.preventDefault();
 		controls.enabled = true;
-		lattice.geometry.vertices[selectedCp].copy( draggable[selectedCp].position );
-		lattice.geometry.verticesNeedUpdate = true;
-		deformMesh();
+		
 		if ( INTERSECTED ) {
+			
 			plane.position.copy( INTERSECTED.position );
+			lattice.geometry.verticesNeedUpdate = true;
+			lattice.geometry.vertices[selectedCp].copy( draggable[selectedCp].position );
+			deformMesh();
 			SELECTED = null;
 		}
 		$('#context').css('cursor','auto');
